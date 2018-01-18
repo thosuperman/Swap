@@ -1,41 +1,25 @@
 #!/bin/sh
 
-# Do argument checks
-if [ ! "$#" -ge 1 ]; then
-    echo "Usage: $0 {size}"
-    echo "Example: $0 4G"
-    echo "(Default path: /swapfile)"
-    echo "Optional path: Usage: $0 {size} {path}"
-    exit 1
-fi
-
-
 ## Intro
-echo "Welcome to Swap setup script! This script will automatically setup a swap file and enable it."
-echo "Root access is required, please run as root or enter sudo password." 
-echo "Source is @ https://github.com/Cretezy/Swap" 
+echo "Setup Swap ..." 
 echo
 
 ## Setup variables
 
-# Get size from first argument
-SWAP_SIZE=$1
+# set swap size = RAM
+SWAP_SIZE=$(free -m | awk '/Mem\:/ { print $2 }')
 
-# Get path from second argument (default to /swapfile)
 SWAP_PATH="/swapfile"
-if [ ! -z "$2" ]; then
-    SWAP_PATH=$2
-fi
-
 
 ## Run
-sudo fallocate -l $SWAP_SIZE $SWAP_PATH  # Allocate size
+sudo dd if=/dev/zero of=$SWAP_PATH bs=1024 count=$SWAP_SIZE"k"
 sudo chmod 600 $SWAP_PATH                # Make it non-world readable (bad!)
+sudo chown root:root $SWAP_PATH
 sudo mkswap $SWAP_PATH                   # Setup swap"         
 sudo swapon $SWAP_PATH                   # Enable swap
-echo "$SWAP_PATH   none    swap    sw    0   0" | sudo tee /etc/fstab -a # Add to fstab
+sudo echo $SWAP_PATH none swap defaults 0 0 >> /etc/fstab
 
-## Outro
+## Finish
 
 echo
-echo "Done! You now have a $SWAP_SIZE swap file at $SWAP_PATH"
+echo "Success! Now your system has $SWAP_SIZE MB swap at $SWAP_PATH"
